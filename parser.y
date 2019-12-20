@@ -993,6 +993,7 @@ import (
 	SelectStmtLimit			"SELECT statement optional LIMIT clause"
 	SelectStmtOpts			"Select statement options"
 	SelectStmtBasic			"SELECT statement from constant value"
+	UnknownHint			"Unknown hint"
 	SelectStmtFromDualTable			"SELECT statement from dual table"
 	SelectStmtFromTable			"SELECT statement from table"
 	SelectStmtGroup			"SELECT statement optional GROUP BY clause"
@@ -6212,6 +6213,14 @@ ShutdownStmt:
 		$$ = &ast.ShutdownStmt{}
 	}
 
+UnknownHint:
+	hintBegin error hintEnd
+	{
+		yyerrok()
+		parser.lastErrorAsWarn()
+		$$ = nil
+	}
+
 SelectStmtBasic:
 	"SELECT" SelectStmtOpts SelectStmtFieldList
 	{
@@ -6224,6 +6233,18 @@ SelectStmtBasic:
 			st.TableHints = st.SelectStmtOpts.TableHints
 		}
 		$$ = st
+	}
+|	UnknownHint "SELECT" SelectStmtOpts SelectStmtFieldList
+	{
+		st := &ast.SelectStmt {
+			SelectStmtOpts: $3.(*ast.SelectStmtOpts),
+               		Distinct:      $3.(*ast.SelectStmtOpts).Distinct,
+       			Fields:        $4.(*ast.FieldList),
+                }
+                if st.SelectStmtOpts.TableHints != nil {
+                	st.TableHints = st.SelectStmtOpts.TableHints
+                }
+                $$ = st
 	}
 
 SelectStmtFromDualTable:
