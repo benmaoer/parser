@@ -6246,6 +6246,30 @@ SelectStmtBasic:
                 }
                 $$ = st
 	}
+|       "SELECT" UnknownHint SelectStmtOpts SelectStmtFieldList
+	{
+		st := &ast.SelectStmt {
+			SelectStmtOpts: $3.(*ast.SelectStmtOpts),
+               		Distinct:      $3.(*ast.SelectStmtOpts).Distinct,
+       			Fields:        $4.(*ast.FieldList),
+                }
+                if st.SelectStmtOpts.TableHints != nil {
+                	st.TableHints = st.SelectStmtOpts.TableHints
+                }
+                $$ = st
+	}
+|       "SELECT" SelectStmtOpts SelectStmtFieldList UnknownHint
+	{
+		st := &ast.SelectStmt {
+			SelectStmtOpts: $2.(*ast.SelectStmtOpts),
+               		Distinct:      $2.(*ast.SelectStmtOpts).Distinct,
+       			Fields:        $3.(*ast.FieldList),
+                }
+                if st.SelectStmtOpts.TableHints != nil {
+                	st.TableHints = st.SelectStmtOpts.TableHints
+                }
+                $$ = st
+	}
 
 SelectStmtFromDualTable:
 	SelectStmtBasic FromDual WhereClauseOptional
@@ -6345,6 +6369,7 @@ SelectStmt:
 
 FromDual:
 	"FROM" "DUAL"
+|	"FROM" "DUAL" UnknownHint
 
 WindowClauseOptional:
 	{
@@ -9822,12 +9847,23 @@ WhereClause:
 	{
 		$$ = $2
 	}
-
+|	"WHERE" Expression UnknownHint
+	{
+		$$ = $2
+	}
 WhereClauseOptional:
 	{
 		$$ = nil
 	}
+|	UnknownHint
+	{
+		$$ = nil
+	}
 |	WhereClause
+	{
+		$$ = $1
+	}
+|       WhereClause UnknownHint
 	{
 		$$ = $1
 	}
